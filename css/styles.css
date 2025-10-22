@@ -1,0 +1,109 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f9fafb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 1em;
+}
+
+.container {
+  background: white;
+  padding: 2em;
+  border-radius: 15px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+input, button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+  overflow-x: auto;
+  display: block;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+th {
+  background: #007bff;
+  color: white;
+}
+
+/* 🔹 Responsividad */
+@media (max-width: 600px) {
+  .container {
+    padding: 1.5em;
+  }
+
+  input, button {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .container {
+    padding: 1em;
+    border-radius: 10px;
+  }
+
+  input, button {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    display: block;
+    width: 100%;
+  }
+
+  tr {
+    margin-bottom: 1em;
+    display: block;
+    border-bottom: 2px solid #007bff;
+  }
+
+  th {
+    border-bottom: none;
+  }
+}

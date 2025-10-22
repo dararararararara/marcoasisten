@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Asistencias</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .controles {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .btn-exportar {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-exportar:hover {
+      background: #218838;
+    }
+    
+    .btn-vaciar {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-vaciar:hover {
+      background: #c82333;
+    }
+    
+    .btn-eliminar {
+      background: #ff6b6b;
+      color: white;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    
+    .btn-eliminar:hover {
+      background: #ee5a52;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal-contenido {
+      background: white;
+      margin: 15% auto;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 400px;
+      text-align: center;
+      animation: slideDown 0.3s;
+    }
+    
+    @keyframes slideDown {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .modal-contenido h2 {
+      color: #dc3545;
+      margin-bottom: 15px;
+    }
+    
+    .modal-contenido p {
+      margin-bottom: 25px;
+      color: #666;
+    }
+    
+    .modal-botones {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    
+    .btn-confirmar {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-confirmar:hover {
+      background: #c82333;
+    }
+    
+    .btn-cancelar {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-cancelar:hover {
+      background: #5a6268;
+    }
+    
+    #tabla th:last-child,
+    #tabla td:last-child {
+      text-align: center;
+      width: 100px;
+    }
+    
+    .mensaje-notificacion {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      z-index: 2000;
+      animation: slideInRight 0.3s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .mensaje-exito {
+      background: #28a745;
+    }
+    
+    .mensaje-error {
+      background: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Panel de Asistencias</h1>
+    
+    <div class="controles">
+      <button id="exportar" class="btn btn-exportar">⬇ Exportar a Excel</button>
+      <button id="vaciarBD" class="btn btn-vaciar">🗑️ Vaciar Base de Datos</button>
+    </div>
+    
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Grupo</th>
+          <th>Asistencias</th>
+          <th>Horas</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="contenido"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal de confirmación para vaciar BD -->
+  <div id="modalVaciar" class="modal">
+    <div class="modal-contenido">
+      <h2>⚠️ ¿Estás seguro?</h2>
+      <p>Esta acción eliminará <strong>TODOS</strong> los registros de la base de datos. Esta operación no se puede deshacer.</p>
+      <div class="modal-botones">
+        <button id="confirmarVaciar" class="btn btn-confirmar">Sí, eliminar todo</button>
+        <button id="cancelarVaciar" class="btn btn-cancelar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación para eliminar alumno -->
+  <div id="modalEliminar" class="modal">
+    <div class="modal-contenido">
+      <h2>⚠️ Eliminar alumno</h2>
+      <p id="textoEliminar">¿Estás seguro de eliminar a este alumno?</p>
+      <div class="modal-botones">
+        <button id="confirmarEliminar" class="btn btn-confirmar">Sí, eliminar</button>
+        <button id="cancelarEliminar" class="btn btn-cancelar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro de Asistencia</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Registro de Asistencia</h1>
+    <form id="formAsistencia">
+      <input type="text" id="nombre" placeholder="Nombre completo" required>
+      <input type="text" id="grupo" placeholder="Grado y grupo (ej. 5i)" required>
+      <button type="submit">Registrar asistencia</button>
+    </form>
+    <p id="mensaje"></p>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/alumno.js"></script>
+</body>
+</html>
