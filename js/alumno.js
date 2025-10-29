@@ -1,7 +1,76 @@
 const form = document.getElementById('formAsistencia');
 const mensaje = document.getElementById('mensaje');
 
-// Función para normalizar texto
+// ========== NUEVAS FUNCIONES PARA CONTROL DE DUPLICADOS ==========
+
+// Obtener IP del usuario
+async function obtenerIP() {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip;
+  } catch (error) {
+    console.error('Error al obtener IP:', error);
+    return null;
+  }
+}
+
+// Verificar si puede registrarse hoy (nombre + grupo + IP)
+async function puedeRegistrarseHoy(nombre, grupo, ip) {
+  const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  // Verificar por nombre y grupo
+  const { data: porNombre } = await supabase
+    .from('alumnos')
+    .select('*')
+    .ilike('nombre', nombre)
+    .ilike('grupo', grupo)
+    .gte('ultima_asistencia', hoy);
+  
+  if (porNombre && porNombre.length > 0) {
+    return { 
+      puede: false, 
+      razon: 'Ya te registraste hoy con este nombre y grupo' 
+    };
+  }
+  
+  // Verificar por IP (si está disponible)
+  if (ip) {
+    const { data: porIP } = await supabase
+      .from('registros_diarios')
+      .select('*')
+      .eq('ip', ip)
+      .eq('fecha', hoy);
+    
+    if (porIP && porIP.length > 0) {
+      return { 
+        puede: false, 
+        razon: 'Este alumno ya registró una asistencia hoy' 
+      };
+    }
+  }
+  
+  return { puede: true };
+}
+
+// Registrar IP del día
+async function registrarIPDelDia(ip, nombre, grupo) {
+  if (!ip) return;
+  
+  const hoy = new Date().toISOString().split('T')[0];
+  
+  await supabase
+    .from('registros_diarios')
+    .insert([{ 
+      ip: ip,
+      fecha: hoy,
+      nombre: nombre,
+      grupo: grupo
+    }]);
+}
+
+// ========== FUNCIONES ORIGINALES ==========
+
 function normalizarTexto(texto) {
   return texto
     .toLowerCase()
@@ -11,7 +80,6 @@ function normalizarTexto(texto) {
     .trim();
 }
 
-// Distancia de Levenshtein (mide diferencias entre strings)
 function distanciaLevenshtein(a, b) {
   const matriz = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
   
@@ -32,7 +100,6 @@ function distanciaLevenshtein(a, b) {
   return matriz[b.length][a.length];
 }
 
-// Similitud por palabras individuales
 function similitudPorPalabras(nombre1, nombre2) {
   const palabras1 = nombre1.split(/\s+/);
   const palabras2 = nombre2.split(/\s+/);
@@ -40,7 +107,6 @@ function similitudPorPalabras(nombre1, nombre2) {
   
   for (let p1 of palabras1) {
     for (let p2 of palabras2) {
-      // Palabras idénticas o muy similares
       const dist = distanciaLevenshtein(p1, p2);
       const umbral = Math.max(1, Math.floor(Math.max(p1.length, p2.length) * 0.25));
       if (dist <= umbral) coincidencias++;
@@ -50,7 +116,6 @@ function similitudPorPalabras(nombre1, nombre2) {
   return coincidencias / Math.max(palabras1.length, palabras2.length);
 }
 
-// Similitud de string completo
 function similitudTextoCompleto(str1, str2) {
   const maxLen = Math.max(str1.length, str2.length);
   if (maxLen === 0) return 1.0;
@@ -58,9 +123,7 @@ function similitudTextoCompleto(str1, str2) {
   return 1 - (dist / maxLen);
 }
 
-// Normalizar y verificar grupos similares
 function gruposSimilares(grupo1, grupo2) {
-  // Extraer número y letra del grupo (ej: "5i" -> numero: 5, letra: "i")
   const match1 = grupo1.match(/(\d+)([a-z]*)/);
   const match2 = grupo2.match(/(\d+)([a-z]*)/);
   
@@ -69,16 +132,12 @@ function gruposSimilares(grupo1, grupo2) {
   const [, num1, letra1] = match1;
   const [, num2, letra2] = match2;
   
-  // Grupos adyacentes (diferencia de 1) con misma letra
   const numDiff = Math.abs(parseInt(num1) - parseInt(num2));
   
-  // Son similares si: misma letra Y (mismo número O números adyacentes)
   return letra1 === letra2 && numDiff <= 1;
 }
 
-// Función principal para buscar coincidencias
 async function buscarAlumnoSimilar(nombre, grupo) {
-  // 1. Buscar primero en el grupo exacto
   let { data: registrosExactos } = await supabase
     .from('alumnos')
     .select('*')
@@ -89,7 +148,6 @@ async function buscarAlumnoSimilar(nombre, grupo) {
     return candidato;
   }
   
-  // 2. Buscar en grupos similares (por si se equivocó de número)
   const { data: todosRegistros } = await supabase
     .from('alumnos')
     .select('*');
@@ -103,7 +161,6 @@ async function buscarAlumnoSimilar(nombre, grupo) {
     return candidato;
   }
   
-  // 3. Búsqueda amplia con umbral más alto
   candidato = buscarMejorCoincidencia(nombre, todosRegistros);
   if (candidato && candidato.similitud >= 0.85) {
     return candidato;
@@ -119,11 +176,9 @@ function buscarMejorCoincidencia(nombre, registros) {
   for (let registro of registros) {
     const nombreRegistro = normalizarTexto(registro.nombre);
     
-    // Calcular ambas similitudes
     const simPalabras = similitudPorPalabras(nombre, nombreRegistro);
     const simTexto = similitudTextoCompleto(nombre, nombreRegistro);
     
-    // Usar el promedio ponderado (dar más peso a palabras)
     const similitudFinal = (simPalabras * 0.6) + (simTexto * 0.4);
     
     if (similitudFinal > mayorSimilitud) {
@@ -140,43 +195,87 @@ function buscarMejorCoincidencia(nombre, registros) {
   return mejorCandidato;
 }
 
+// ========== EVENTO SUBMIT MODIFICADO ==========
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  let nombre = normalizarTexto(document.getElementById('nombre').value);
-  let grupo = normalizarTexto(document.getElementById('grupo').value);
+  const nombreOriginal = document.getElementById('nombre').value;
+  const grupoOriginal = document.getElementById('grupo').value;
+  const nombre = normalizarTexto(nombreOriginal);
+  const grupo = normalizarTexto(grupoOriginal);
+  
+  // 🔒 OBTENER IP Y VERIFICAR SI PUEDE REGISTRARSE
+  const ip = await obtenerIP();
+  const verificacion = await puedeRegistrarseHoy(nombreOriginal, grupoOriginal, ip);
+  
+  if (!verificacion.puede) {
+    mensaje.textContent = `❌ ${verificacion.razon}`;
+    mensaje.style.background = '#f8d7da';
+    mensaje.style.color = '#721c24';
+    mensaje.style.padding = '15px';
+    mensaje.style.borderRadius = '5px';
+    mensaje.style.display = 'block';
+    
+    setTimeout(() => {
+      mensaje.textContent = '';
+      mensaje.style.background = '';
+      mensaje.style.color = '';
+      mensaje.style.display = '';
+    }, 5000);
+    
+    return; // Detener el registro
+  }
   
   // Buscar alumno similar
   const candidato = await buscarAlumnoSimilar(nombre, grupo);
+  const hoy = new Date().toISOString().split('T')[0];
   
   if (candidato) {
     const registro = candidato.registro;
     const nuevasAsistencias = registro.asistencias + 1;
     const nuevasHoras = nuevasAsistencias * 5;
     
+    // Actualizar asistencias y última asistencia
     await supabase
       .from('alumnos')
-      .update({ asistencias: nuevasAsistencias, horas: nuevasHoras })
+      .update({ 
+        asistencias: nuevasAsistencias, 
+        horas: nuevasHoras,
+        ultima_asistencia: hoy
+      })
       .eq('id', registro.id);
     
-    // Mostrar mensaje indicando si hubo corrección
+    // Registrar IP del día
+    await registrarIPDelDia(ip, nombreOriginal, grupoOriginal);
+    
     if (candidato.nombreOriginal !== nombre || candidato.grupoOriginal !== grupo) {
       mensaje.textContent = `✅ Asistencia registrada para ${candidato.nombreOriginal} (${candidato.grupoOriginal}) - ${nuevasHoras} horas acumuladas.`;
       mensaje.style.background = '#fff3cd';
+      mensaje.style.padding = '15px';
+      mensaje.style.borderRadius = '5px';
+      mensaje.style.display = 'block';
     } else {
       mensaje.textContent = `✅ Asistencia registrada (${nuevasHoras} horas acumuladas).`;
       mensaje.style.background = '#d4edda';
+      mensaje.style.padding = '15px';
+      mensaje.style.borderRadius = '5px';
+      mensaje.style.display = 'block';
     }
   } else {
     // Nuevo alumno
     await supabase
       .from('alumnos')
       .insert([{ 
-        nombre: document.getElementById('nombre').value, // Guardar nombre original
-        grupo: document.getElementById('grupo').value,    // Guardar grupo original
+        nombre: nombreOriginal,
+        grupo: grupoOriginal,
         asistencias: 1,
-        horas: 5
+        horas: 5,
+        ultima_asistencia: hoy
       }]);
+    
+    // Registrar IP del día
+    await registrarIPDelDia(ip, nombreOriginal, grupoOriginal);
     
     mensaje.textContent = "✅ Nuevo alumno registrado con 5 horas.";
     mensaje.style.background = '#d1ecf1';
@@ -184,7 +283,6 @@ form.addEventListener('submit', async (e) => {
   
   form.reset();
   
-  // Ocultar mensaje después de 5 segundos
   setTimeout(() => {
     mensaje.textContent = '';
     mensaje.style.background = '';
