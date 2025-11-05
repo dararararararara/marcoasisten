@@ -1,4 +1,5 @@
 let alumnoAEliminar = null;
+let alumnoAEditar = null;
 
 // Función para mostrar notificaciones
 function mostrarNotificacion(mensaje, tipo = 'exito') {
@@ -23,7 +24,7 @@ async function cargarTabla() {
   tbody.innerHTML = "";
 
   if (alumnos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">No hay registros</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">No hay registros</td></tr>';
     return;
   }
 
@@ -35,6 +36,9 @@ async function cargarTabla() {
         <td>${a.asistencias}</td>
         <td>${a.horas}</td>
         <td>
+          <button class="btn btn-editar" onclick="mostrarModalEditar(${a.id}, '${a.nombre}', ${a.horas})">
+            ✏️ Editar
+          </button>
           <button class="btn btn-eliminar" onclick="mostrarModalEliminar(${a.id}, '${a.nombre}')">
             ✕ Eliminar
           </button>
@@ -71,7 +75,7 @@ btnConfirmarVaciar.addEventListener('click', async () => {
     const { error } = await supabase
       .from('alumnos')
       .delete()
-      .neq('id', 0); // Elimina todos los registros
+      .neq('id', 0);
     
     if (error) throw error;
     
@@ -122,6 +126,61 @@ btnConfirmarEliminar.addEventListener('click', async () => {
   }
 });
 
+// Modal para editar horas de alumno
+const modalEditar = document.getElementById('modalEditar');
+const btnConfirmarEditar = document.getElementById('confirmarEditar');
+const btnCancelarEditar = document.getElementById('cancelarEditar');
+const inputHoras = document.getElementById('inputHoras');
+
+window.mostrarModalEditar = (id, nombre, horasActuales) => {
+  alumnoAEditar = id;
+  document.getElementById('textoEditar').innerHTML = 
+    `Editando horas de <strong>${nombre}</strong>`;
+  inputHoras.value = horasActuales;
+  inputHoras.focus();
+  modalEditar.style.display = 'block';
+};
+
+btnCancelarEditar.addEventListener('click', () => {
+  modalEditar.style.display = 'none';
+  alumnoAEditar = null;
+});
+
+btnConfirmarEditar.addEventListener('click', async () => {
+  if (!alumnoAEditar) return;
+  
+  const nuevasHoras = parseFloat(inputHoras.value);
+  
+  if (isNaN(nuevasHoras) || nuevasHoras < 0) {
+    mostrarNotificacion('❌ Por favor ingresa un número válido de horas', 'error');
+    return;
+  }
+  
+  try {
+    const { error } = await supabase
+      .from('alumnos')
+      .update({ horas: nuevasHoras })
+      .eq('id', alumnoAEditar);
+    
+    if (error) throw error;
+    
+    modalEditar.style.display = 'none';
+    alumnoAEditar = null;
+    await cargarTabla();
+    mostrarNotificacion('✅ Horas actualizadas correctamente');
+  } catch (error) {
+    mostrarNotificacion('❌ Error al actualizar las horas', 'error');
+    console.error(error);
+  }
+});
+
+// Permitir guardar con Enter en el input
+inputHoras.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    btnConfirmarEditar.click();
+  }
+});
+
 // Cerrar modales al hacer clic fuera
 window.addEventListener('click', (e) => {
   if (e.target === modalVaciar) {
@@ -130,6 +189,10 @@ window.addEventListener('click', (e) => {
   if (e.target === modalEliminar) {
     modalEliminar.style.display = 'none';
     alumnoAEliminar = null;
+  }
+  if (e.target === modalEditar) {
+    modalEditar.style.display = 'none';
+    alumnoAEditar = null;
   }
 });
 

@@ -234,7 +234,7 @@ form.addEventListener('submit', async (e) => {
   if (candidato) {
     const registro = candidato.registro;
     const nuevasAsistencias = registro.asistencias + 1;
-    const nuevasHoras = nuevasAsistencias * 10;
+    const nuevasHoras = nuevasAsistencias * 5;
     
     // Actualizar asistencias y última asistencia
     await supabase
