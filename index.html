@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Panel de Asistencia</title>
@@ -15,14 +16,17 @@
       font-family: 'Poppins', sans-serif;
       text-align: center;
     }
+
     h1 {
       margin-bottom: 30px;
       color: #333;
     }
+
     .btn-container {
       display: flex;
       gap: 20px;
     }
+
     a {
       text-decoration: none;
       background: #007bff;
@@ -31,17 +35,23 @@
       border-radius: 10px;
       transition: 0.3s;
     }
+
     a:hover {
       background: #0056b3;
       transform: scale(1.05);
     }
   </style>
 </head>
+
 <body>
   <h1>Panel de Asistencia</h1>
   <div class="btn-container">
     <a href="registro.html">Registro de Alumnos</a>
     <a href="admin.html">Panel del Maestro</a>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/keep-alive.js"></script>
 </body>
+
 </html>
